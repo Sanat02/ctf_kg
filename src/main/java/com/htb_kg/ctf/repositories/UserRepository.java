@@ -16,4 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByToBusiness(Boolean business);
     Optional<User> findByRole(Role role);
     void deleteByRole(Role role);
+    Optional<User> findByConfirmCode(String code);
 }

@@ -7,6 +7,7 @@ import com.htb_kg.ctf.dto.hacker.HackerUpdateRequest;
 import com.htb_kg.ctf.dto.rank.RankingResponse;
 import com.htb_kg.ctf.entities.*;
 import com.htb_kg.ctf.enums.Role;
+import com.htb_kg.ctf.exception.BadCredentialsException;
 import com.htb_kg.ctf.exception.BadRequestException;
 import com.htb_kg.ctf.exception.NotFoundException;
 import com.htb_kg.ctf.mapper.HackerMapper;
@@ -91,7 +92,8 @@ public class HackerServiceImpl implements HackerService {
 
     private void scoreEventScoreBoard(EventScoreBoard eventScoreBoard, Hacker hacker, Task task) {
         eventScoreBoard.setPoint(eventScoreBoard.getPoint() + task.getPoints());
-        task.setPoints((int) (task.getPoints() * 0.2));
+        if (task.getPoints() > 100)
+            task.setPoints((int) (task.getPoints() * 0.98));
         taskRepository.save(task);
         eventScoreBoardRepository.save(eventScoreBoard);
 
@@ -105,7 +107,8 @@ public class HackerServiceImpl implements HackerService {
         tasks.add(task);
         eventScoreBoard.setSubmittedTasks(tasks);
         eventScoreBoard.setPoint(task.getPoints());
-        task.setPoints((int) (task.getPoints() * 0.2));
+        if (task.getPoints() > 100)
+            task.setPoints((int) (task.getPoints() * 0.98));
         taskRepository.save(task);
         eventScoreBoardRepository.save(eventScoreBoard);
     }
@@ -128,7 +131,7 @@ public class HackerServiceImpl implements HackerService {
         hacker.setPoints(hacker.getPoints()==null?task.get().getPoints(): hacker.getPoints()+ task.get().getPoints());
 
         if (task.get().getPoints()>100){
-            task.get().setPoints((int) (task.get().getPoints()*0.2));
+            task.get().setPoints((int) (task.get().getPoints()*0.98));
         }
         taskRepository.save(task.get());
 
@@ -146,6 +149,7 @@ public class HackerServiceImpl implements HackerService {
 
     @Override
     public List<RankingResponse> taskRanking() {
+
         return userMapper.toRanking(hackerRepository.findAllByOrderByPointsDesc());
     }
 
@@ -185,6 +189,9 @@ public class HackerServiceImpl implements HackerService {
 
     @Override
     public HackerProfileResponse getById(String token) {
+        if (token.substring(7).split("\\.").length<2){
+            throw new BadCredentialsException("no token");
+        }
         User user = userService.getUsernameFromToken(token);
         Hacker hacker = user.getHacker();
 

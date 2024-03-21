@@ -30,7 +30,11 @@ public class AuthenticationController {
 
     @PostMapping("/register/code")
     public void checkCode(@RequestParam(required = false) String email, @RequestParam(required = false) Integer code){
-        service.checkCode(email, code);
+
+    }
+    @GetMapping("/confirm/{url}")
+    public String confirm(@PathVariable String url){
+        return service.confirmEmail(url);
     }
 
     @PostMapping("/refresh_send")

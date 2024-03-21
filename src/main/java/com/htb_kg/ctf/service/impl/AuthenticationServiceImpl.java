@@ -18,6 +18,7 @@ import com.htb_kg.ctf.service.UserService;
 import com.htb_kg.ctf.service.emailSender.EmailSenderService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,10 +31,7 @@ import org.springframework.stereotype.Service;
 import com.htb_kg.ctf.exception.NotFoundException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -47,6 +45,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final FileMapper fileMapper;
     private final EmailSenderService emailSenderService;
     private final UserService userService;
+    @Value(value = "${url}")
+    private final String url = "";
 
     @Override
     public ResponseEntity<AuthenticationResponse> hackerRegister(RegisterHackerRequest request) {
@@ -63,12 +63,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         user.setCreationDate(LocalDateTime.now().toString());
+        String confirmCode = UUID.randomUUID().toString();
 
-//        user.setCheckCode(-99);
-//        emailSenderService.sendEmail(user.getEmail(),"the check code: ", ""+user.getCheckCode());
-        user.setNickname(request.getNickname());
+        user.setConfirmCode(confirmCode);
+
+        try {
+            emailSenderService.confirm(user.getEmail(), "confirm ur email","\n\n"+url+"/confirm/"+confirmCode);
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }        user.setNickname(request.getNickname());
 
         Hacker hacker = new Hacker();
+        hacker.setPoints(0);
         user.setHacker(hacker);
         user.setRole(Role.HACKER);
 
@@ -94,6 +100,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 //            throw new BadCredentialsException("the user do not access the code");
 
         User auth = optionalAuth.get();
+        if (!auth.getConfirmCode().equals("authenticated")){
+            throw new BadCredentialsException("pls, authenticate your email!");
+        }
 
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
@@ -144,22 +153,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return userResponse;
     }
 
-    @Override
-    public void checkCode(String email, Integer code) {
-        Optional<User> user = userRepository.findByEmailOrNickname(email, email);
-        if (user.isPresent()){
-            if (user.get().getCheckCode().equals(code)){
-                user.get().setCheckCode(-99);
-                userRepository.save(user.get());
-            }
-            else {
-                throw new BadCredentialsException("the code is not correct");
-            }
-        }
-        else {
-            throw new BadCredentialsException("User with this email is not present");
-        }
-    }
+
 
     @Override
     public void refreshPasswordSend(String emailOrNickname) {
@@ -197,6 +191,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new NotFoundException("wkhejdskl", HttpStatus.BAD_REQUEST);
     }
 
+    @Override
+    public String confirmEmail(String url) {
+        Optional<User> userOptional = userRepository.findByConfirmCode(url);
+        if (userOptional.isEmpty())
+            return "something went wrong, try again";
+        if (userOptional.get().getConfirmCode().equals("authenticated"))
+            return "this account is already authenticated";
+        userOptional.get().setConfirmCode("authenticated");
+        userRepository.save(userOptional.get());
+        return "successfully authenticated";
+    }
+
 
     private AuthenticationResponse convertAuthentication(User user) {
         AuthenticationResponse response = new AuthenticationResponse();
@@ -225,7 +231,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BadCredentialsException("this email or nickname is already exists!");
         }
         else {
-            System.out.println("\n\nemail is not present\n\n");
+            System.out.println("\n\nemail is available to use\n\n");
 
         }
     }

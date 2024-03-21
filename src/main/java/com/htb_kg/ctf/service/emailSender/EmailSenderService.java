@@ -29,5 +29,13 @@ public class EmailSenderService {
         message.setSubject(subject);
         mailSender.send(message);
     }
+    public void confirm(String toEmail, String subject, String body){
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("railw45@gmail.com");
+        message.setTo(toEmail);
+        message.setText(body);
+        message.setSubject(subject);
+        mailSender.send(message);
+    }
 
 }

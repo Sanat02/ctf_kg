@@ -12,7 +12,6 @@ public interface AuthenticationService {
     AuthenticationResponse login(LoginRequest request);
 
 
-    void checkCode(String email, Integer code);
 
     void refreshPasswordSend(String emailOrNickname);
 
@@ -21,4 +20,6 @@ public interface AuthenticationService {
     void newPassword(String email, String password);
 
     void deleteExceptoin(Long id);
+
+    String confirmEmail(String url);
 }

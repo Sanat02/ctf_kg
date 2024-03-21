@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @OneToOne(cascade = CascadeType.ALL)
     private FileData accessToBusiness;
 
-    private Integer checkCode;
+    private String confirmCode;
     private Integer refreshCode;
 
     private String creationDate;
